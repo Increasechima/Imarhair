@@ -1,7 +1,7 @@
 import "server-only";
 import { serverEnv } from "@/server/env";
 
-export type OutgoingEmail = { to: string; subject: string; html: string; text: string };
+export type OutgoingEmail = { to: string; subject: string; html: string; text: string; replyTo?: string };
 
 /** Sends through Mailgun's HTTP API, or prints to the server log in dev (EMAIL_TRANSPORT=log). */
 export async function deliverEmail(email: OutgoingEmail): Promise<{ id: string | null }> {
@@ -18,6 +18,7 @@ export async function deliverEmail(email: OutgoingEmail): Promise<{ id: string |
     html: email.html,
     text: email.text,
   });
+  if (email.replyTo) body.set("h:Reply-To", email.replyTo);
   const res = await fetch(`${apiBase}/v3/${domain}/messages`, {
     method: "POST",
     headers: { Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString("base64")}` },

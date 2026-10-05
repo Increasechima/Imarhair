@@ -66,7 +66,7 @@ export function ProductGallery({ images, productName }: { images: ProductImageIn
               aria-label={img.path ? `Zoom image ${i + 1}` : undefined}
               tabIndex={img.path ? 0 : -1}
             >
-              <ProductImage path={img.path} alt={img.alt} sizes={MAIN_SIZES} priority={i === 0} />
+              <ProductImage path={img.path} alt={img.alt} sizes={MAIN_SIZES} preload={i === 0} />
             </button>
           ))}
         </div>

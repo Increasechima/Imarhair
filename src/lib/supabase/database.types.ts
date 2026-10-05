@@ -1115,6 +1115,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          count: number;
+          key: string;
+          window_start: string;
+        };
+        Insert: {
+          count?: number;
+          key: string;
+          window_start?: string;
+        };
+        Update: {
+          count?: number;
+          key?: string;
+          window_start?: string;
+        };
+        Relationships: [];
+      };
       reviews: {
         Row: {
           approved_at: string | null;
@@ -1390,6 +1408,10 @@ export type Database = {
         Returns: Json;
       };
       assert_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
+      check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number };
+        Returns: boolean;
+      };
       claim_guest_orders: { Args: { p_email: string; p_user_id: string }; Returns: undefined };
       create_pending_order: { Args: { p_order: Json }; Returns: Json };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };

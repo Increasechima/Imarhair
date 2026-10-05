@@ -43,7 +43,7 @@ export async function ShopView({
 
         {products.length > 0 ? (
           <>
-            <ProductGrid products={products} priorityCount={4} />
+            <ProductGrid products={products} preloadCount={4} />
             {products.length < total && (
               <div className="mt-14 flex flex-col items-center gap-3">
                 <p className="text-small text-taupe">

@@ -9,7 +9,7 @@ import type { ProductSummary } from "@/lib/catalog/types";
 export const CARD_SIZES = "(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw";
 
 // Style.md §6 Product card: no border, no shadow, no rounded corners.
-export function ProductCard({ product, priority = false }: { product: ProductSummary; priority?: boolean }) {
+export function ProductCard({ product, preload = false }: { product: ProductSummary; preload?: boolean }) {
   const href = `/shop/${product.slug}`;
   const price = priceDisplay(product);
   const badge = productBadge(product);
@@ -20,7 +20,7 @@ export function ProductCard({ product, priority = false }: { product: ProductSum
     <article className="group flex w-full min-w-0 flex-col">
       <div className="relative">
         <Link href={href} tabIndex={-1} aria-hidden className="block">
-          <ProductImage path={first} alt={product.imageAlts[0] ?? product.name} sizes={CARD_SIZES} priority={priority} />
+          <ProductImage path={first} alt={product.imageAlts[0] ?? product.name} sizes={CARD_SIZES} preload={preload} />
           {second && (
             <div className="absolute inset-0 opacity-0 transition-opacity duration-(--duration-base) ease-(--ease-out) [@media(hover:hover)]:group-hover:opacity-100">
               <ProductImage path={second} alt="" sizes={CARD_SIZES} />
@@ -51,12 +51,12 @@ export function ProductCard({ product, priority = false }: { product: ProductSum
   );
 }
 
-export function ProductGrid({ products, priorityCount = 0 }: { products: ProductSummary[]; priorityCount?: number }) {
+export function ProductGrid({ products, preloadCount = 0 }: { products: ProductSummary[]; preloadCount?: number }) {
   return (
     <ul className="grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 md:gap-x-5 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14">
       {products.map((p, i) => (
         <li key={p.id} className="flex">
-          <ProductCard product={p} priority={i < priorityCount} />
+          <ProductCard product={p} preload={i < preloadCount} />
         </li>
       ))}
     </ul>

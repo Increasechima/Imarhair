@@ -9,13 +9,13 @@ export function ProductImage({
   path,
   alt,
   sizes,
-  priority = false,
+  preload = false,
   className,
 }: {
   path: string | null | undefined;
   alt: string;
   sizes: string;
-  priority?: boolean;
+  preload?: boolean;
   className?: string;
 }) {
   return (
@@ -26,7 +26,7 @@ export function ProductImage({
           alt={alt}
           fill
           sizes={sizes}
-          priority={priority}
+          preload={preload}
           className="object-cover"
         />
       ) : (

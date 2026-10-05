@@ -23,5 +23,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),
+    ...["about", "contact", "faq", "shipping", "returns", "privacy", "terms"].map((page) => ({
+      url: `${base}/${page}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.3,
+    })),
   ];
 }

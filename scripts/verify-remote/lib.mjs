@@ -89,6 +89,9 @@ export async function sweepTestData(cfg, db) {
   }
   await db.query(`delete from public.orders where email::text like '${TEST_PREFIX}%' or order_number like 'IMR-19990101-%'`);
   await db.query(`delete from public.newsletter_subscribers where email::text like '${TEST_PREFIX}%'`);
+  await db.query(`delete from public.contact_messages where email::text like '${TEST_PREFIX}%'`);
+  // Dev project only: reset form throttles so back-to-back verify runs aren't limited.
+  await db.query(`delete from public.rate_limits where key like 'newsletter:%' or key like 'contact:%' or key like 'placeOrder:%'`);
   await db.query(`delete from public.email_log where to_email::text like '${TEST_PREFIX}%'`);
   return removed;
 }

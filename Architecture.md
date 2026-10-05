@@ -381,8 +381,15 @@ The trigger on `auth.users` (insert, plus email-confirmed update) runs `update o
 - **Authorization:** the user-scoped Supabase client is used by default, so RLS enforces ownership. Privileged code checks ownership explicitly, e.g. `order.user_id === session.user.id || accessToken matches`.
 - **Webhooks:** raw body, HMAC check, constant-time comparison, idempotency table, and a 200 response only after the event has been safely stored.
 - **Payment integrity:** an order is paid only after server verification and an amount/currency match. A client success message never changes anything.
-- **Rate limiting:** newsletter, contact, login-adjacent actions and `placeOrder` are limited per IP and per email (Vercel KV / Upstash, or a Postgres-based limiter).
-- **Headers:** CSP (self, Supabase, Paystack, Google OAuth, fonts), `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, HSTS.
+- **Rate limiting:** `rateLimit()` in `src/server/privileged/rate-limit.ts` is a fixed-window limiter in Postgres (`rate_limits` table and the `check_rate_limit` function, service role only). Limits per IP: newsletter 5/hour, contact 5/hour, `placeOrder` 10 per 10 minutes. Keys are `sha256(bucket|ip)`, so no IPs are stored. It fails open, so a limiter outage never blocks customers. The IP comes from `x-forwarded-for`, which Vercel sets, so it's only trustworthy behind Vercel's proxy. Supabase Auth rate-limits sign-in, sign-up and reset itself.
+- **Headers** (`next.config.ts`): a static CSP without nonces, so catalogue pages stay statically cached:
+  - `script-src 'self' 'unsafe-inline'`, needed for Next's inline bootstrap without nonces;
+  - `connect-src` allows Supabase over https and wss (realtime bag sync);
+  - `img-src` allows Supabase Storage;
+  - `form-action` is `'self'` plus Supabase (the OAuth start);
+  - `frame-ancestors 'none'`, `object-src 'none'`.
+
+  Paystack is a full-page redirect, so it needs no script or frame allowance. If Paystack Inline (popup) is ever adopted, add `js.paystack.co` and `checkout.paystack.com`. Also set: `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, HSTS. `pnpm verify:e2e` fails on any CSP violation.
 - **Uploads:** admin-only Storage bucket policy for writes, public read for `product-images`, MIME/size checks, and resizing via the Next image optimiser.
 - **PII:** only the minimum is collected. Stored payment provider payloads are stripped of sensitive fields. Logs never include addresses or phone numbers.
 
@@ -413,7 +420,8 @@ The trigger on `auth.users` (insert, plus email-confirmed update) runs `update o
 
 - `generateMetadata` on every page sets the title template `%s | Imarhair`, description, canonical and Open Graph image (the product's first image).
 - The PDP includes `Product` JSON-LD with `offers` (price in NGN, availability) and `aggregateRating` only when approved reviews exist.
-- `sitemap.ts` lists static pages, active collections and published products with their `updated_at`.
+- `src/app/opengraph-image.jpg` (a crop of the hero) is the default share image. The home page carries `Organization` and `WebSite` (with `SearchAction`) JSON-LD.
+- `sitemap.ts` lists static pages, content pages, active collections and published products with their `updated_at`.
 - `robots.ts` disallows `/account`, `/admin`, `/checkout`, `/cart` and `/api`.
 
 ## 14. Environments and config

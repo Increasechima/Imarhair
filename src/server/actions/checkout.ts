@@ -7,6 +7,7 @@ import { confirmPayment, getOrderForViewer, placeOrder, quote, retryPayment, typ
 import { supabaseAdmin } from "@/server/privileged/supabase-admin";
 import { serverEnv } from "@/server/env";
 import { callbackOrigin } from "@/server/request-origin";
+import { rateLimit } from "@/server/privileged/rate-limit";
 import { checkoutSchema, guestLinesSchema, type CheckoutInput } from "@/lib/validation/checkout";
 import { fieldErrors, type FieldErrors } from "@/lib/validation/auth";
 import { toCartView, type CartView, type Quote } from "@/lib/orders";
@@ -96,7 +97,9 @@ export async function placeOrderAction(input: CheckoutInput, guestLines?: Line[]
   if (!lines?.length) return { status: "error", message: "Your bag is empty." };
 
   const d = parsed.data;
-  // TODO(M5): rate-limit per IP/email (Architecture.md §9).
+  if (!(await rateLimit("placeOrder"))) {
+    return { status: "error", message: "Too many checkout attempts. Please wait a few minutes and try again." };
+  }
   let result;
   try {
     result = await placeOrder(

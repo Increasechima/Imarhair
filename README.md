@@ -82,7 +82,7 @@ Secrets go in `.env.local` (git-ignored). **Never commit secrets.** Variables wi
 | `MAILGUN_API_BASE` | server | `https://api.mailgun.net` (US) or `https://api.eu.mailgun.net` (EU) |
 | `EMAIL_FROM` | server | e.g. `Imarhair <orders@imarhair.com>` |
 | `EMAIL_TRANSPORT` | server | `mailgun` or `log` (prints emails to the console in dev) |
-| `SUPPORT_EMAIL` / `SUPPORT_PHONE` | server | Shown in emails and the footer |
+| `SUPPORT_EMAIL` / `SUPPORT_PHONE` | server | Contact page (email, WhatsApp) and the inbox contact-form messages are sent to |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | **server/CLI** | Used by `supabase/config.toml` for local Google OAuth only. In production they are set in the Supabase dashboard. |
 
 The [`.env.example`](.env.example) file lists every variable with empty values.
@@ -176,7 +176,16 @@ pnpm verify:e2e                        # real browser at 375px; VERIFY_BASE_URL 
 
 Customers get saved addresses, account settings, and an account home showing their bag and wishlist. Catalogue edits appear in the shop immediately.
 
-⏭ **Next: M5 Content & polish.** This covers About, Contact, FAQ, Shipping, Returns, Privacy and Terms, rate limiting, security headers, and performance and accessibility passes. After that comes deployment (Vercel plus a production Supabase project), then Paystack and Mailgun.
+✅ **M5 Content & polish complete.** This covers:
+- About, Contact (a working form, stored in Supabase and forwarded to `SUPPORT_EMAIL`), FAQ, Shipping & Delivery (prices read live from the delivery rates checkout uses), Returns, Privacy and Terms;
+- rate limits on the newsletter, contact form and order placement;
+- a Content-Security-Policy;
+- a default share image, plus Organization and WebSite structured data;
+- automated accessibility checks in `pnpm verify:e2e`.
+
+Returns, Privacy, Terms and Shipping carry a **draft** banner (shown only outside production) until Imarhair approves the wording. The bracketed return windows are placeholders.
+
+⏭ **Next: launch.** Deploy to Vercel with a separate production Supabase project, add the Paystack live keys and Mailgun domain, set `SUPPORT_EMAIL`/`SUPPORT_PHONE`, promote the owner's account to admin, upload real photos and products, and approve the policy pages.
 
 ---
 

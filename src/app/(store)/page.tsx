@@ -20,8 +20,35 @@ export default async function HomePage() {
     getInstagramTiles(),
   ]);
 
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Imarhair Limited",
+      alternateName: siteConfig.name,
+      url: siteConfig.url,
+      logo: `${siteConfig.url}/icon.svg`,
+      sameAs: [siteConfig.instagram.url],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteConfig.name,
+      url: siteConfig.url,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${siteConfig.url}/search?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ];
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
       {/* 1. Hero */}
       {/* Mobile: photo first, full-bleed. Desktop: copy left, portrait photo right. */}
       <section className="lg:container-page lg:grid lg:grid-cols-12 lg:items-center lg:gap-12 lg:py-12">
@@ -30,7 +57,7 @@ export default async function HomePage() {
             src={heroImage}
             alt="Long honey brown body wave unit by Imarhair"
             fill
-            priority
+            preload
             placeholder="blur"
             sizes="(min-width: 1024px) 45vw, 100vw"
             className="object-cover object-top"

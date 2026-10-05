@@ -49,6 +49,9 @@ const send = (method, params = {}) => new Promise((res) => { const i = ++msgId; 
 const evaluate = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result?.result?.value;
 await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 812, deviceScaleFactor: 1, mobile: true });
 await send("Page.enable");
+// Record Content-Security-Policy violations on every page so a too-strict CSP fails the run.
+await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__csp = []; document.addEventListener("securitypolicyviolation", (e) => window.__csp.push(e.violatedDirective + " " + e.blockedURI));` });
+const cspViolations = () => evaluate("(window.__csp ?? []).join(', ')");
 
 // Wait for load AND React hydration (hydrated nodes carry __reactFiber keys), so
 // clicks never land on not-yet-interactive server HTML.
@@ -60,7 +63,7 @@ const text = () => evaluate("document.body.innerText");
 const waitFor = async (pred, timeout = 15000) => { const t = Date.now(); while (Date.now() - t < timeout) { if (await pred()) return true; await sleep(300); } return false; };
 const waitText = (s) => waitFor(async () => (await text()).replace(/’/g, "'").includes(s));
 const fill = (sel, value) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return false;
-  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(value)});
+  Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value').set.call(el, ${JSON.stringify(value)});
   el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
 const click = (sel) => evaluate(`document.querySelector(${JSON.stringify(sel)})?.click() ?? false`);
 const shot = async (name) => { mkdirSync(SHOTS, { recursive: true }); const s = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(join(SHOTS, `${name}.png`), Buffer.from(s.result.data, "base64")); };
@@ -135,6 +138,57 @@ try {
   r.check((await path()) === "/login?error=link_expired" && (await text()).includes("That link has expired"), "bad email link → expired message");
   await go("/auth/callback?code=bogus");
   r.check((await path()) === "/login?error=auth", "bad OAuth code → login error");
+
+  r.section("Content pages, contact form, security headers");
+  const pages = { "/about": "Hair that makes you feel confident", "/contact": "Send a message", "/faq": "Frequently asked questions",
+    "/shipping": "Delivery options", "/returns": "Hygiene first", "/privacy": "Your rights", "/terms": "Orders and prices" };
+  for (const [p, heading] of Object.entries(pages)) {
+    await go(p);
+    r.check((await text()).includes(heading) && (await noOverflow()), `${p} renders and fits 375px`);
+  }
+  const rate = (await db.query(`select r.price from public.delivery_rates r join public.delivery_methods m on m.id = r.method_id
+    where m.is_active and r.zone = 'lagos' order by m.sort_order limit 1`)).rows[0].price;
+  const naira = (kobo) => `₦${(kobo / 100).toLocaleString("en-NG")}`;
+  await go("/shipping");
+  r.check((await text()).includes(naira(Number(rate))), "shipping page shows the live Lagos rate from Supabase", naira(Number(rate)));
+  await go("/contact");
+  await click('main form button[type="submit"]');
+  r.check(await waitText("Enter your name"), "empty contact form shows inline errors");
+  const cm = `${TEST_PREFIX}e2e-contact-${run}@example.com`;
+  await fill('main input[name="name"]', "Ngozi Verify");
+  await fill('main input[name="email"]', cm);
+  await fill("#contact-message", "Hello, is the 20 inch body wave back in stock soon?");
+  await click('main form button[type="submit"]');
+  r.check(await waitText("we've received your message"), "contact form shows success");
+  r.check((await db.query("select count(*)::int n from public.contact_messages where email = $1", [cm])).rows[0].n === 1, "contact message stored in Supabase");
+  const csp = (await fetch(BASE + "/")).headers.get("content-security-policy") ?? "";
+  r.check(csp.includes("frame-ancestors 'none'") && csp.includes("object-src 'none'"), "Content-Security-Policy header is set");
+  r.check((await cspViolations()) === "", "no CSP violations on the contact flow", await cspViolations());
+
+  r.section("Accessibility basics (AGENTS.md UI rules)");
+  const audit = `(() => {
+    const visible = (el) => { const r = el.getBoundingClientRect(); const s = getComputedStyle(el);
+      return r.width > 0 && r.height > 0 && s.visibility !== "hidden" && !el.closest("[aria-hidden=true]"); };
+    const name = (el) => (el.getAttribute("aria-label") || el.getAttribute("aria-labelledby") && document.getElementById(el.getAttribute("aria-labelledby"))?.textContent
+      || el.textContent || el.querySelector("img[alt]")?.alt || el.title || "").trim();
+    const issues = [];
+    const h1 = document.querySelectorAll("h1").length; if (h1 !== 1) issues.push(h1 + " h1");
+    document.querySelectorAll("img:not([alt])").forEach((i) => issues.push("img without alt " + i.src.slice(-40)));
+    document.querySelectorAll("a[href], button").forEach((el) => { if (!visible(el)) return;
+      if (!name(el)) issues.push("unnamed " + el.tagName + " " + (el.getAttribute("href") ?? el.className.slice(0, 40)));
+      const r = el.getBoundingClientRect();
+      if (el.tagName === "BUTTON" && (r.height < 44 && r.width < 44)) issues.push("small target " + name(el).slice(0, 30)); });
+    document.querySelectorAll("input:not([type=hidden]), select, textarea").forEach((el) => { if (!visible(el)) return;
+      const labelled = el.labels?.length || el.getAttribute("aria-label") || el.getAttribute("aria-labelledby");
+      if (!labelled) issues.push("unlabelled " + (el.name || el.id)); });
+    return issues.join("; ");
+  })()`;
+  const firstProduct = (await db.query("select slug from public.products where is_published order by created_at limit 1")).rows[0].slug;
+  for (const p of ["/", "/shop", `/shop/${firstProduct}`, "/collections", "/cart", "/login", "/signup", "/contact", "/faq", "/shipping"]) {
+    await go(p);
+    const issues = await evaluate(audit);
+    r.check(issues === "", `${p} has one h1, alt text, named controls, labelled inputs and 44px buttons`, issues);
+  }
 
   r.section("Sign-up validation (no email is sent)");
   await go("/signup");

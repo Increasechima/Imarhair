@@ -17,9 +17,14 @@ export async function verifySchema(db, r) {
     where n.nspname = 'public' and c.relkind = 'r'
     group by c.relname, c.relrowsecurity`)).rows;
   const noRls = tables.filter((t) => !t.rls).map((t) => t.relname);
-  const noPolicies = tables.filter((t) => t.policies === 0).map((t) => t.relname);
+  // Service-role-only tables: RLS on with no policies = deny every client role.
+  const SERVICE_ONLY = ["rate_limits"];
+  const noPolicies = tables.filter((t) => t.policies === 0 && !SERVICE_ONLY.includes(t.relname)).map((t) => t.relname);
   r.check(noRls.length === 0, `RLS enabled on all ${tables.length} public tables`, noRls.join(", "));
-  r.check(noPolicies.length === 0, "every public table has at least one policy", noPolicies.join(", "));
+  r.check(noPolicies.length === 0, "every client-facing public table has at least one policy", noPolicies.join(", "));
+  const serviceGrants = (await db.query(`select count(*)::int n from information_schema.role_table_grants
+    where table_schema = 'public' and table_name = any($1) and grantee in ('anon', 'authenticated')`, [SERVICE_ONLY])).rows[0].n;
+  r.check(serviceGrants === 0, "service-only tables grant nothing to anon/authenticated", SERVICE_ONLY.join(", "));
 
   const triggers = (await db.query(
     "select tgname from pg_trigger where tgrelid = 'auth.users'::regclass and not tgisinternal")).rows.map((t) => t.tgname);

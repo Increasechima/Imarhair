@@ -58,7 +58,7 @@ Before you call a task done, run `pnpm lint`, `pnpm typecheck` and `pnpm test`. 
 2. **No secrets in client code.** Only `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL` may be public. The service-role key, payment secret and Mailgun key are used only in `src/server/privileged/**`, and every file there begins with `import 'server-only'`.
 3. **Never mark an order paid without server-side verification.** Use `confirmPayment()` only. The payment amount and currency must match the order.
 4. **Never store card numbers, CVV, PINs or similar.** Strip sensitive fields from provider payloads before saving them.
-5. **Every new table has RLS enabled, policies, and a pgTAP test.** No exceptions.
+5. **Every new table has RLS enabled, policies, and a pgTAP test.** No exceptions. The only policy-less tables are service-role-only ones (e.g. `rate_limits`): RLS on, no grants to `anon`/`authenticated`, listed in `SERVICE_ONLY` in `scripts/verify-remote/schema.mjs`.
 6. **Money is integer kobo** (`bigint` in SQL, `number` in TS). Format only at the edge with `formatNaira()` from `src/lib/money.ts`. No floats for money.
 7. **Prices are computed on the server.** Never trust a price, total or discount sent from the client.
 8. **Stock changes go through the SQL functions** (`create_pending_order`, `mark_order_paid`, `release_expired_reservations`, admin inventory RPCs). No ad-hoc `update inventory`.
@@ -133,6 +133,9 @@ Before you call a task done, run `pnpm lint`, `pnpm typecheck` and `pnpm test`. 
 | Forms that keep input on error | `useSubmitAction()` in `src/lib/use-submit-action.ts` (React 19 resets `<form action>` fields after every submit) |
 | Dev catalogue tools | `pnpm dev:reseed-catalog`, `pnpm dev:catalog-images` (dev project only) |
 | Seed data | `supabase/seed.sql` |
+| Content pages | `src/app/(store)/{about,contact,faq,shipping,returns,privacy,terms}`, `src/components/content/` (`ContentPage` with a dev-only draft banner, `prose-imar` styles, `ContactForm`), `src/server/actions/contact.ts` |
+| Rate limiting | `src/server/privileged/rate-limit.ts` (`rateLimit(bucket)`), SQL `check_rate_limit` |
+| Security headers / CSP | `next.config.ts` |
 
 ## When unsure
 

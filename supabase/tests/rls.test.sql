@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(29);
+select plan(31);
 
 -- ---------------------------------------------------------------------------
 -- helpers
@@ -111,6 +111,16 @@ select is((select count(*)::int from public.orders where user_id = '00000000-000
 update auth.users set email_confirmed_at = now() where id = '00000000-0000-0000-0000-00000000000c';
 select is((select count(*)::int from public.orders where user_id = '00000000-0000-0000-0000-00000000000c'),
   1, 'verified email claims guest orders (case-insensitive)');
+
+-- ---------------------------------------------------------------------------
+-- rate_limits: service role only
+-- ---------------------------------------------------------------------------
+select pg_temp.as_anon();
+select throws_ok('select * from public.rate_limits', '42501', null, 'anon cannot read rate_limits');
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select throws_ok($$ select public.check_rate_limit('contact:xxxxxxxx', 1, 60) $$, '42501', null, 'customers cannot call check_rate_limit');
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- admin

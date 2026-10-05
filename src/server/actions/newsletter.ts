@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { newsletterSchema } from "@/lib/validation/auth";
+import { rateLimit } from "@/server/privileged/rate-limit";
 
 export type NewsletterState =
   | { status: "idle" }
@@ -20,7 +21,9 @@ export async function subscribeToNewsletter(
     return { status: "error", message: "Enter a valid email address." };
   }
 
-  // TODO(M5): per-IP rate limit (Architecture.md §9).
+  if (!(await rateLimit("newsletter"))) {
+    return { status: "error", message: "Too many attempts. Please try again in a little while." };
+  }
   const supabase = await createClient();
   const { error } = await supabase.from("newsletter_subscribers").insert(parsed.data);
 

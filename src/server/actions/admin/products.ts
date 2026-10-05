@@ -54,6 +54,7 @@ export async function saveProduct(_prev: AdminState, formData: FormData): Promis
   }
 
   const { data, error } = await supabase.from("products").insert({ ...row, base_price: 0 }).select("id").single();
+  if (error) console.error("product insert failed", { code: error.code, message: error.message });
   if (error) return fail(error.code === "23505" ? "That URL slug is already used by another product." : "Could not create the product.");
   redirect(`/admin/products/${data.id}?created=1`);
 }
