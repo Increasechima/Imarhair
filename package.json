@@ -1,0 +1,55 @@
+{
+  "name": "imarhair",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:db": "supabase test db",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
+    "db:types:remote": "node scripts/gen-types.mjs",
+    "verify:remote": "node scripts/verify-remote/run.mjs",
+    "dev:reseed-catalog": "node scripts/dev/reseed-catalog.mjs",
+    "dev:catalog-images": "node scripts/dev/catalog-images.mjs",
+    "verify:e2e": "node scripts/verify-remote/e2e.mjs && node scripts/verify-remote/e2e-checkout.mjs",
+    "verify:e2e:checkout": "node scripts/verify-remote/e2e-checkout.mjs"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.50.0",
+    "next": "16.3.8",
+    "radix-ui": "^1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "pg": "^8.23.1",
+    "prettier": "^3.9.9",
+    "supabase": "^2.119.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "packageManager": "pnpm@12.9.1"
+}

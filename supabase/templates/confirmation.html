@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Confirm your Imarhair account</title>
+  </head>
+  <body style="margin:0;padding:0;background:#faf8f4;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f4;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;">
+            <tr>
+              <td align="center" style="padding:40px 32px 8px;font-family:Georgia,'Times New Roman',serif;font-size:28px;letter-spacing:12px;color:#111111;">
+                I<span style="color:#c4922b;">M</span>AR
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px 40px 8px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.2;color:#111111;" align="center">
+                Confirm your email
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 40px 24px;font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#5f584f;" align="center">
+                Welcome to Imarhair, Queen. Confirm your email to finish creating your account.
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:8px 40px 32px;">
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/account"
+                   style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;border-radius:2px;">
+                  Confirm email
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 40px 40px;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:#8c847a;" align="center">
+                If you didn't create an account, you can ignore this email.
+              </td>
+            </tr>
+          </table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+            <tr>
+              <td align="center" style="padding:24px 16px;font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#8c847a;">
+                Imarhair Limited · Classy. Confident. IMAR.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
