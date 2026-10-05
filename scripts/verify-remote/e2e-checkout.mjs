@@ -137,6 +137,23 @@ try {
   r.check(await phone.waitFor(async () => (await phone.bagLabel()) === "Bag, 1 item"), "device 2: bag restored from Supabase", await phone.bagLabel());
   await phone.shot("checkout-second-device");
 
+  r.section("Live sync between devices");
+  await phone.go(`${BASE}/shop/imar-straight-bundle`);
+  await phone.clickText("main button", "Add to Cart");
+  r.check(await phone.waitFor(async () => (await phone.bagLabel()) === "Bag, 2 items"), "device 2: adds a second item");
+  await new Promise((res) => setTimeout(res, 3200)); // past the 3s sync throttle
+  await laptop.go(`${BASE}/collections`);
+  r.check(await laptop.waitFor(async () => (await laptop.bagLabel()) === "Bag, 2 items"), "device 1: moving to another page picks up the new item", await laptop.bagLabel());
+  await phone.click('a[aria-label^="Bag"]');
+  await phone.waitText("Your bag (2)");
+  await phone.evaluate(`(() => { const li = [...document.querySelectorAll('[role=dialog] li')].find(l => l.textContent.includes('Imar Straight Bundle'));
+    [...(li?.querySelectorAll('button') ?? [])].find(b => b.textContent.trim() === 'Remove')?.click(); })()`);
+  r.check(await phone.waitFor(async () => (await phone.bagLabel()) === "Bag, 1 item"), "device 2: removes it");
+  await phone.evaluate("document.querySelector('[role=dialog] button[aria-label=\"Close bag\"]')?.click()");
+  await new Promise((res) => setTimeout(res, 3200));
+  await laptop.evaluate("window.dispatchEvent(new Event('focus'))"); // shopper returns to the laptop tab
+  r.check(await laptop.waitFor(async () => (await laptop.bagLabel()) === "Bag, 1 item"), "device 1: returning to the tab drops the removed item", await laptop.bagLabel());
+
   await phone.go(`${BASE}/checkout`);
   const prefilled = await phone.evaluate("document.querySelector('input[name=email]')?.value");
   r.check(prefilled === userEmail, "checkout pre-fills the account email");

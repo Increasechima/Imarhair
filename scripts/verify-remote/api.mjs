@@ -204,6 +204,23 @@ export async function verifyApi(cfg, db, r, run) {
     const tr = await A2.c.from("orders").update({ tracking_number: "TRK-VERIFY" }).eq("order_number", orderNumbers[0]).select("tracking_number");
     r.check(tr.data?.[0]?.tracking_number === "TRK-VERIFY", "admin can add tracking", tr.error?.message);
 
+    r.section("Admin SQL functions (M4)");
+    for (const [fn, args] of [
+      ["admin_dashboard", {}],
+      ["admin_list_customers", {}],
+      ["admin_set_stock", { p_variant_id: "00000000-0000-0000-0000-000000000000", p_on_hand: 1 }],
+      ["admin_update_order_status", { p_order_id: "00000000-0000-0000-0000-000000000000", p_to_status: "cancelled" }],
+    ]) {
+      const res = await B.c.rpc(fn, args);
+      r.check(res.error?.code === "42501", `customers cannot call ${fn}`, res.error?.code ?? "allowed!");
+    }
+    const dash = await A2.c.rpc("admin_dashboard");
+    r.check(!dash.error && typeof dash.data?.needs_action === "number", "admin can read the dashboard", dash.error?.message);
+    const people = await A2.c.rpc("admin_list_customers", { p_search: email("bisi") });
+    r.check(people.data?.length === 1 && people.data[0].email === email("bisi"), "admin can search customers by email", people.data?.length);
+    const bad = await A2.c.rpc("admin_update_order_status", { p_order_id: (await one("select id from public.orders where order_number = $1", [orderNumbers[0]])).id, p_to_status: "delivered" });
+    r.check(bad.error?.message === "INVALID_TRANSITION", "illegal status jumps are refused (pending → delivered)", bad.error?.message);
+
     // ------------------------------------------------------------ checkout SQL (M3)
     r.section("Checkout SQL: pricing, reservations, payment confirmation");
     const stockBefore = (await db.query("select variant_id, on_hand, reserved from public.inventory")).rows;

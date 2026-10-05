@@ -11,10 +11,12 @@ export const metadata: Metadata = {
 
 const adminNav = [
   { label: "Dashboard", href: "/admin" },
+  { label: "Orders", href: "/admin/orders" },
   { label: "Products", href: "/admin/products" },
   { label: "Inventory", href: "/admin/inventory" },
-  { label: "Orders", href: "/admin/orders" },
   { label: "Customers", href: "/admin/customers" },
+  { label: "Reviews", href: "/admin/reviews" },
+  { label: "Discounts", href: "/admin/discounts" },
 ];
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
@@ -50,7 +52,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </Link>
         </div>
       </header>
-      <main className="container-page flex-1 py-8">{children}</main>
+      <main className="container-page min-w-0 flex-1 py-8">{children}</main>
     </div>
   );
 }

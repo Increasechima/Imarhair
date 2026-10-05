@@ -3,15 +3,19 @@ import { publicEnv } from "@/lib/env";
 import { serverEnv } from "@/server/env";
 import { supabaseAdmin } from "@/server/privileged/supabase-admin";
 import { deliverEmail } from "./mailgun";
-import { orderConfirmationEmail } from "./templates";
+import { orderConfirmationEmail, orderStatusEmail, type StatusEmailType } from "./templates";
 
-export type OrderEmailType = "order_confirmation";
+export type OrderEmailType = "order_confirmation" | StatusEmailType;
 
 /**
  * Sends an order email at most once per (order, type) — guarded by the
  * email_log unique index. Never throws: email problems must not break checkout.
  */
-export async function sendOrderEmail(orderId: string, type: OrderEmailType): Promise<"sent" | "skipped" | "failed"> {
+export async function sendOrderEmail(
+  orderId: string,
+  type: OrderEmailType,
+  opts: { note?: string | null } = {},
+): Promise<"sent" | "skipped" | "failed"> {
   const db = supabaseAdmin();
   try {
     const { data: already } = await db
@@ -28,7 +32,7 @@ export async function sendOrderEmail(orderId: string, type: OrderEmailType): Pro
       .select(
         `id, order_number, user_id, email, access_token, contact_name, subtotal, delivery_fee, discount_total, total,
          shipping_name, shipping_phone, shipping_line1, shipping_line2, shipping_city, shipping_state, shipping_country,
-         delivery_method_name, delivery_eta_text,
+         delivery_method_name, delivery_eta_text, tracking_number, tracking_url,
          order_items(product_name, variant_label, quantity, line_total)`,
       )
       .eq("id", orderId)
@@ -39,7 +43,20 @@ export async function sendOrderEmail(orderId: string, type: OrderEmailType): Pro
       ? `${publicEnv.siteUrl}/account/orders/${order.order_number}`
       : `${publicEnv.siteUrl}/checkout/confirmation/${order.order_number}?t=${order.access_token}`;
 
-    const email = orderConfirmationEmail({
+    const support = { email: serverEnv.supportEmail, phone: serverEnv.supportPhone };
+    const email =
+      type !== "order_confirmation"
+        ? orderStatusEmail(type, {
+            orderNumber: order.order_number,
+            customerName: order.contact_name,
+            orderUrl,
+            support,
+            total: order.total,
+            trackingNumber: order.tracking_number,
+            trackingUrl: order.tracking_url,
+            note: opts.note ?? null,
+          })
+        : orderConfirmationEmail({
       orderNumber: order.order_number,
       customerName: order.contact_name,
       items: order.order_items.map((i) => ({

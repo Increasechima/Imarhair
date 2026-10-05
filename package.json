@@ -19,7 +19,8 @@
     "verify:remote": "node scripts/verify-remote/run.mjs",
     "dev:reseed-catalog": "node scripts/dev/reseed-catalog.mjs",
     "dev:catalog-images": "node scripts/dev/catalog-images.mjs",
-    "verify:e2e": "node scripts/verify-remote/e2e.mjs && node scripts/verify-remote/e2e-checkout.mjs",
+    "verify:e2e": "node scripts/verify-remote/e2e.mjs && node scripts/verify-remote/e2e-checkout.mjs && node scripts/verify-remote/e2e-admin.mjs",
+    "verify:e2e:admin": "node scripts/verify-remote/e2e-admin.mjs",
     "verify:e2e:checkout": "node scripts/verify-remote/e2e-checkout.mjs"
   },
   "engines": {

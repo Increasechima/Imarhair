@@ -107,3 +107,76 @@ ${esc(d.deliveryMethod)}${d.deliveryEta ? ` · ${esc(d.deliveryEta)}` : ""}
 
   return { subject: `Order confirmed: #${d.orderNumber}`, html: layout("Order confirmed", inner, d.support), text };
 }
+
+export type StatusEmailType = "order_processing" | "order_shipped" | "order_delivered" | "order_cancelled" | "order_refunded";
+
+const STATUS_COPY: Record<StatusEmailType, { subject: (n: string) => string; title: string; body: string }> = {
+  order_processing: {
+    subject: (n) => `We're preparing your order #${n}`,
+    title: "Your order is being prepared",
+    body: "Good news, Queen. We've started preparing your order and will let you know as soon as it's on its way.",
+  },
+  order_shipped: {
+    subject: (n) => `Your order #${n} is on its way`,
+    title: "Your order is on its way",
+    body: "Your Imarhair order has been dispatched.",
+  },
+  order_delivered: {
+    subject: (n) => `Your order #${n} has been delivered`,
+    title: "Delivered",
+    body: "Your order has been delivered. We hope you love it, Queen. If anything isn't right, reply to this email and we'll help.",
+  },
+  order_cancelled: {
+    subject: (n) => `Your order #${n} has been cancelled`,
+    title: "Your order has been cancelled",
+    body: "Your order has been cancelled. If you were charged, your refund will be processed and we'll confirm it by email.",
+  },
+  order_refunded: {
+    subject: (n) => `Refund for order #${n}`,
+    title: "Your refund is on its way",
+    body: "We've processed a refund for your order. Depending on your bank, it can take a few working days to appear.",
+  },
+};
+
+export function orderStatusEmail(
+  type: StatusEmailType,
+  d: Pick<OrderEmailData, "orderNumber" | "customerName" | "orderUrl" | "support" | "total"> & {
+    trackingNumber: string | null;
+    trackingUrl: string | null;
+    note: string | null;
+  },
+) {
+  const copy = STATUS_COPY[type];
+  const firstName = d.customerName.split(" ")[0] || "Queen";
+  const tracking =
+    type === "order_shipped" && d.trackingNumber
+      ? `<tr><td align="center" style="padding:8px 40px 0;${font}font-size:14px;color:#111111;">Tracking: ${
+          d.trackingUrl ? `<a href="${esc(d.trackingUrl)}" style="color:#111111;">${esc(d.trackingNumber)}</a>` : esc(d.trackingNumber)
+        }</td></tr>`
+      : "";
+  const note = d.note
+    ? `<tr><td align="center" style="padding:12px 40px 0;${font}font-size:14px;line-height:1.6;color:#5f584f;">${esc(d.note)}</td></tr>`
+    : "";
+  const inner = `
+<tr><td align="center" style="padding:24px 40px 4px;${serif}font-size:28px;color:#111111;">${esc(copy.title)}</td></tr>
+<tr><td align="center" style="padding:8px 40px 0;${font}font-size:16px;line-height:1.6;color:#5f584f;">Hi ${esc(firstName)}, ${esc(copy.body)}</td></tr>
+${tracking}${note}
+<tr><td align="center" style="padding:16px 40px 0;${font}font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#111111;">Order #${esc(d.orderNumber)} · ${formatNaira(d.total)}</td></tr>
+<tr><td align="center" style="padding:28px 40px 40px;">
+<a href="${esc(d.orderUrl)}" style="display:inline-block;background:#111111;color:#ffffff;text-decoration:none;${font}font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;border-radius:2px;">View my order</a>
+</td></tr>`;
+  const text = [
+    copy.title,
+    "",
+    `Hi ${firstName}, ${copy.body}`,
+    ...(type === "order_shipped" && d.trackingNumber ? [`Tracking: ${d.trackingNumber}${d.trackingUrl ? ` (${d.trackingUrl})` : ""}`] : []),
+    ...(d.note ? ["", d.note] : []),
+    "",
+    `Order #${d.orderNumber} · ${formatNaira(d.total)}`,
+    `View your order: ${d.orderUrl}`,
+    "",
+    `Questions? Reply to this email${d.support.email ? ` or write to ${d.support.email}` : ""}.`,
+    "Imarhair Limited · Classy. Confident. IMAR.",
+  ].join("\n");
+  return { subject: copy.subject(d.orderNumber), html: layout(copy.title, inner, d.support), text };
+}

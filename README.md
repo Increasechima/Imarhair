@@ -168,7 +168,15 @@ pnpm verify:e2e                        # real browser at 375px; VERIFY_BASE_URL 
 
 ✅ **M3 Buy complete.** This covers the persistent bag (Supabase for signed-in shoppers, browser for guests, merged on sign-in, shared across devices), the bag drawer and `/cart`, single-page checkout with live server pricing, Nigerian states, saved addresses and discount codes, stock reserved for 30 minutes while paying, Paystack plus a dev-only mock provider, server-side verification via callback and signed webhook, idempotent payment confirmation, declined payment with retry, the order confirmation page, the confirmation email (Mailgun or console), and account order history and detail. The dev catalogue now uses Imarhair's photos, and the home page has a hero image.
 
-⏭ **Next: M4 Account & Admin.** This covers admin products, inventory, orders (status changes and their emails, tracking), customers, reviews and discount codes, plus account addresses and settings. Before go-live, add Paystack test keys (`PAYMENT_PROVIDER=paystack`) and Mailgun.
+✅ **M4 Account & Admin complete.** Admin (`/admin`, admins only) covers:
+- a dashboard (sales today and this week, orders to fulfil, low stock);
+- orders (search, filter, status changes with customer emails, tracking, payments, history);
+- products (create and edit, options with prices and stock, photo upload from phone or computer, publish, featured and best seller);
+- inventory, customers, reviews (real ones only, with the customer's consent) and discount codes.
+
+Customers get saved addresses, account settings, and an account home showing their bag and wishlist. Catalogue edits appear in the shop immediately.
+
+⏭ **Next: M5 Content & polish.** This covers About, Contact, FAQ, Shipping, Returns, Privacy and Terms, rate limiting, security headers, and performance and accessibility passes. After that comes deployment (Vercel plus a production Supabase project), then Paystack and Mailgun.
 
 ---
 

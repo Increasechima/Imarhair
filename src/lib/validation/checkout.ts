@@ -51,3 +51,21 @@ export const checkoutSchema = z
 
 export type CheckoutInput = z.input<typeof checkoutSchema>;
 export type CheckoutData = z.output<typeof checkoutSchema>;
+
+/** Saved address (account page) — same rules as the checkout address. */
+export const addressSchema = z
+  .object({
+    fullName: z.string().trim().min(2, { error: "Enter the recipient's name." }).max(120),
+    phone: z.string().trim().transform(normalizePhone),
+    line1: z.string().trim().min(3, { error: "Enter the street address." }).max(200),
+    line2: z.string().trim().max(200).optional().default(""),
+    city: z.string().trim().min(2, { error: "Enter the city or town." }).max(80),
+    state: z.string().trim().min(2, { error: "Choose the state." }).max(80),
+    country: z.enum(countryCodes, { error: "Choose the country." }),
+    isDefault: z.string().optional().transform((v) => v === "on"), // absent when unticked
+  })
+  .superRefine((v, ctx) => {
+    const ok = v.country === "NG" ? NG_PHONE.test(v.phone) : INTL_PHONE.test(v.phone);
+    if (!ok) ctx.addIssue({ code: "custom", path: ["phone"], message: "Enter a valid phone number." });
+    if (v.country === "NG" && !isNigerianState(v.state)) ctx.addIssue({ code: "custom", path: ["state"], message: "Choose the state." });
+  });

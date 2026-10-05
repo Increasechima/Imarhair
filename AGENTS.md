@@ -98,6 +98,7 @@ Before you call a task done, run `pnpm lint`, `pnpm typecheck` and `pnpm test`. 
   - **Functions called from policies:** anything a public-read policy calls (e.g. `is_admin()`) needs `EXECUTE` for `anon` too, or every anonymous read fails.
   - **Named constraints:** `check (total >= 0)` on a column `total` is auto-named `<table>_total_check`. Don't reuse that name for a table constraint.
   - **pgTAP:** test descriptions are SQL strings, so use `'single quotes'` (`''` for an apostrophe). `"double quotes"` are identifiers. A data-modifying `WITH` can't be nested inside `is(...)`, so run the statement first and assert afterwards.
+- **Zod 4 + checkboxes:** an unticked checkbox is *absent* from FormData. `z.union([z.literal("on"), z.undefined()])` still makes the key required in Zod 4; use `z.string().optional().transform((v) => v === "on")`.
 - The hosted DB is reached through the session pooler (`aws-0-<region>.pooler.supabase.com:5432`, user `postgres.<ref>`), because the direct host is IPv6-only.
 
 ### Git
@@ -127,6 +128,9 @@ Before you call a task done, run `pnpm lint`, `pnpm typecheck` and `pnpm test`. 
 | Nigerian states | `src/lib/ng-states.ts` |
 | Pricing (single source of truth) | SQL `quote_order`, called by `quote()` in `src/server/privileged/orders.ts` for the bag, checkout summary and order creation |
 | Order pages | `src/app/(store)/checkout/confirmation/[orderNumber]`, `src/app/(store)/account/orders`, `src/components/order/` |
+| Admin pages | `src/app/admin/` (dashboard, orders, products, inventory, customers, reviews, discounts), `src/components/admin/` |
+| Admin writes | `src/server/actions/admin/` (each re-checks `isAdmin()`), SQL `admin_update_order_status`, `admin_set_stock`, `admin_dashboard`, `admin_list_customers` |
+| Forms that keep input on error | `useSubmitAction()` in `src/lib/use-submit-action.ts` (React 19 resets `<form action>` fields after every submit) |
 | Dev catalogue tools | `pnpm dev:reseed-catalog`, `pnpm dev:catalog-images` (dev project only) |
 | Seed data | `supabase/seed.sql` |
 

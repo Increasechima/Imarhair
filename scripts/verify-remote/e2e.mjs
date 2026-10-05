@@ -109,10 +109,11 @@ try {
   r.check((await text()).includes("This page has moved on"), "customer gets a 404 on /admin");
   await db.query("update public.profiles set role = 'admin' where id = $1", [userId]);
   await go("/admin");
-  const expected = (await db.query(`select (select count(*) from public.products)::text a,
-    (select count(*) from public.products where is_published)::text b, (select count(*) from public.orders)::text c`)).rows[0];
+  const expected = (await db.query(`select
+      (select count(*) from public.orders where status in ('paid', 'processing', 'ready_for_dispatch'))::text as open,
+      (select count(*) from public.orders where status = 'pending_payment')::text as pending`)).rows[0];
   const shown = await evaluate("[...document.querySelectorAll('dd')].map(d => d.textContent.trim())");
-  r.check(JSON.stringify(shown) === JSON.stringify([expected.a, expected.b, expected.c]), "admin dashboard shows live counts", JSON.stringify(shown));
+  r.check(shown?.[2] === expected.open && shown?.[3] === expected.pending, "admin dashboard shows live order counts", JSON.stringify(shown));
   await shot("admin");
 
   r.section("Sign out");

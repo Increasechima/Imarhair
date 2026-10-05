@@ -362,7 +362,7 @@ If the verify status is `failed` or `abandoned`, the payment row is updated and 
 ### 8.5 Admin status change
 
 The server action `updateOrderStatus(orderId, toStatus, { trackingNumber?, trackingUrl?, note? })`:
-- Requires `is_admin()`.
+- Requires `is_admin()`. **Implemented in M4** as SQL `admin_update_order_status` (transition graph enforced in SQL; cancelling an unpaid order releases its hold, cancelling a paid unshipped order restocks; refunds don't restock) called from `changeOrderStatus` in `src/server/actions/admin/operations.ts`.
 - Checks the transition against an allowed graph (e.g. `paid → processing → ready_for_dispatch → shipped → delivered`. `cancelled` is allowed from pending/paid/processing. `refunded` is allowed from any paid state).
 - Writes history.
 - Triggers the matching email.

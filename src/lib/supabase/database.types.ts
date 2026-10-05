@@ -1363,6 +1363,33 @@ export type Database = {
       };
     };
     Functions: {
+      admin_dashboard: { Args: Record<PropertyKey, never>; Returns: Json };
+      admin_list_customers: {
+        Args: { p_id?: string; p_limit?: number; p_offset?: number; p_search?: string };
+        Returns: {
+          created_at: string;
+          email: string;
+          full_name: string;
+          id: string;
+          last_order_at: string;
+          orders_count: number;
+          phone: string;
+          total_count: number;
+          total_spent: number;
+        }[];
+      };
+      admin_set_stock: { Args: { p_on_hand: number; p_variant_id: string }; Returns: undefined };
+      admin_update_order_status: {
+        Args: {
+          p_note?: string;
+          p_order_id: string;
+          p_to_status: Database["public"]["Enums"]["order_status"];
+          p_tracking_number?: string;
+          p_tracking_url?: string;
+        };
+        Returns: Json;
+      };
+      assert_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
       claim_guest_orders: { Args: { p_email: string; p_user_id: string }; Returns: undefined };
       create_pending_order: { Args: { p_order: Json }; Returns: Json };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };

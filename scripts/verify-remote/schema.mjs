@@ -42,6 +42,11 @@ export async function verifySchema(db, r) {
     ["mark_order_paid", true, false, false],
     ["prepare_payment_retry", true, false, false],
     ["release_expired_reservations", true, false, false],
+    ["assert_admin", true, false, true],
+    ["admin_update_order_status", true, false, true],
+    ["admin_set_stock", true, false, true],
+    ["admin_dashboard", true, false, true],
+    ["admin_list_customers", true, false, true],
   ];
   const fns = Object.fromEntries((await db.query(`
     select p.proname, p.prosecdef, coalesce(array_to_string(p.proconfig, ','), '') cfg,

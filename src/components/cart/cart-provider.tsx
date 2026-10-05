@@ -6,10 +6,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { useSignedIn } from "@/components/auth/session-provider";
 import { addLine, guestCartStore, MAX_LINE_QUANTITY, type CartLine } from "@/lib/cart/guest-cart";
 import {
@@ -65,18 +67,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [guestView, setGuestView] = useState<{ key: string; view: CartView } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Bumped on every account-bag write; a background sync that started before
+  // a write must not overwrite the newer state it returns.
+  const version = useRef(0);
+  const loaded = useRef(false);
+  const lastSync = useRef(0);
 
   // Signed-out → signed-in: merge the guest bag into the account bag, then load it.
   useEffect(() => {
-    if (signedIn !== true) return;
+    if (signedIn !== true) {
+      loaded.current = false;
+      return;
+    }
     let cancelled = false;
     (async () => {
       const pending = guestCartStore.get();
+      const v = ++version.current;
       const res = pending.length ? await mergeGuestCart(toServerLines(pending)) : await getCart();
       if (cancelled) return;
       if (res.ok) {
         if (pending.length) guestCartStore.set([]);
-        setAccount(res.data);
+        if (v === version.current) setAccount(res.data);
+        loaded.current = true;
+        lastSync.current = Date.now();
         setError(null);
       } else {
         setError(res.error);
@@ -86,6 +101,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [signedIn]);
+
+  // Keep the account bag in step with other devices: re-sync on every page
+  // change and whenever the shopper returns to this tab/window (throttled).
+  const syncAccount = useCallback(async () => {
+    if (signedIn !== true || !loaded.current) return;
+    if (Date.now() - lastSync.current < 3000) return;
+    lastSync.current = Date.now();
+    const v = version.current;
+    const res = await getCart();
+    if (res.ok && v === version.current) setAccount(res.data);
+  }, [signedIn]);
+
+  useEffect(() => {
+    void syncAccount();
+  }, [pathname, syncAccount]);
+
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState === "visible") void syncAccount();
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("focus", onReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("focus", onReturn);
+    };
+  }, [syncAccount]);
 
   // Guests: price the local lines on the server whenever they change.
   const guestKey = keyOf(guestLines);
@@ -112,6 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         : null;
 
   const applyAccount = useCallback((res: Awaited<ReturnType<typeof getCart>>) => {
+    version.current++;
     if (res.ok) {
       setAccount(res.data);
       setError(null);

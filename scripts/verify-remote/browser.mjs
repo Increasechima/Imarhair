@@ -109,6 +109,14 @@ export async function launch({ shotsDir }) {
       clickText: (sel, label) =>
         evaluate(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find(e => e.textContent.trim().startsWith(${JSON.stringify(label)}));
           if (!el) return false; el.click(); return true; })()`),
+      /** Attach local files to an <input type=file> (CDP), firing its change event. */
+      async setFiles(sel, files) {
+        const { result: doc } = await send("DOM.getDocument", { depth: 0 });
+        const { result: node } = await send("DOM.querySelector", { nodeId: doc.root.nodeId, selector: sel });
+        if (!node?.nodeId) return false;
+        await send("DOM.setFileInputFiles", { nodeId: node.nodeId, files });
+        return true;
+      },
       bagLabel: () => evaluate("document.querySelector('a[aria-label^=\"Bag\"]')?.getAttribute('aria-label')"),
       async shot(file) {
         mkdirSync(shotsDir, { recursive: true });

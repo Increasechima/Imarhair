@@ -204,3 +204,15 @@ export function toOrderView(o: OrderRow): OrderView {
     isGuest: o.user_id === null,
   };
 }
+
+/** Status changes an admin may make from each status (mirrors admin_update_order_status). */
+export const NEXT_STATUSES: Record<string, string[]> = {
+  pending_payment: ["cancelled"],
+  paid: ["processing", "cancelled", "refunded"],
+  processing: ["ready_for_dispatch", "shipped", "cancelled", "refunded"],
+  ready_for_dispatch: ["shipped", "cancelled", "refunded"],
+  shipped: ["delivered", "refunded"],
+  delivered: ["refunded"],
+  cancelled: [],
+  refunded: [],
+};

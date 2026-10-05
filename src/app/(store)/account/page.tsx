@@ -3,32 +3,25 @@ import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
 import { createClient, getProfile } from "@/lib/supabase/server";
 import { formatNaira } from "@/lib/money";
+import { ORDER_STATUS_LABEL as statusLabel } from "@/lib/orders";
+import { BagSummary } from "@/components/account/bag-summary";
+import { ProductGrid } from "@/components/product/product-card";
+import { getProductsByIds } from "@/server/queries/catalog";
 
 export const metadata: Metadata = {
   title: "My account",
   robots: { index: false },
 };
 
-const statusLabel: Record<string, string> = {
-  pending_payment: "Pending payment",
-  paid: "Paid",
-  processing: "Processing",
-  ready_for_dispatch: "Ready for dispatch",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-  refunded: "Refunded",
-};
-
-// M1 overview. Wishlist and current-cart previews arrive with M3/M4.
+// prd.md §6.10: welcome, recent orders, current bag, wishlist.
 export default async function AccountPage() {
   const profile = await getProfile();
   const supabase = await createClient();
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("order_number, total, status, created_at")
-    .order("created_at", { ascending: false })
-    .limit(3);
+  const [{ data: orders }, { data: saved }] = await Promise.all([
+    supabase.from("orders").select("order_number, total, status, created_at").order("created_at", { ascending: false }).limit(3),
+    supabase.from("wishlist_items").select("product_id").order("added_at", { ascending: false }).limit(4),
+  ]);
+  const wishlist = await getProductsByIds((saved ?? []).map((s) => s.product_id));
 
   const firstName = profile?.full_name?.split(" ")[0];
 
@@ -76,6 +69,31 @@ export default async function AccountPage() {
               Shop hair
             </ButtonLink>
           </div>
+        )}
+      </section>
+
+      <section className="mt-12" aria-labelledby="bag-h">
+        <h2 id="bag-h" className="text-h3 border-b border-line pb-3">
+          Your bag
+        </h2>
+        <BagSummary />
+      </section>
+
+      <section className="mt-12" aria-labelledby="wishlist-h">
+        <div className="mb-6 flex items-baseline justify-between border-b border-line pb-3">
+          <h2 id="wishlist-h" className="text-h3">
+            Wishlist
+          </h2>
+          {wishlist.length > 0 && (
+            <Link href="/account/wishlist" className="text-label underline underline-offset-4">
+              View all
+            </Link>
+          )}
+        </div>
+        {wishlist.length ? (
+          <ProductGrid products={wishlist} />
+        ) : (
+          <p className="text-body text-taupe">Save the looks you love. Tap the heart on any product.</p>
         )}
       </section>
     </div>
