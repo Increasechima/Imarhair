@@ -1,10 +1,12 @@
+import { siteUrl } from "@/lib/env";
+
 // Brand-level constants. Contact details are placeholders until Imarhair
 // confirms them (prd.md Q7); they render only when set.
 export const siteConfig = {
   name: "Imarhair",
   tagline: "Classy. Confident. IMAR",
   description: "Wigs, bundles and haircare products for elegant women.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: siteUrl,
   instagram: {
     handle: "@imarhair",
     url: "https://www.instagram.com/imarhair",
