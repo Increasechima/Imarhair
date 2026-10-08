@@ -52,6 +52,7 @@ export async function verifySchema(db, r) {
     ["admin_set_stock", true, false, true],
     ["admin_dashboard", true, false, true],
     ["admin_list_customers", true, false, true],
+    ["notify_cart_changed", true, false, false],
   ];
   const fns = Object.fromEntries((await db.query(`
     select p.proname, p.prosecdef, coalesce(array_to_string(p.proconfig, ','), '') cfg,
@@ -64,6 +65,15 @@ export async function verifySchema(db, r) {
       `function ${name}: definer=${secdef}, anon=${anonX}, authenticated=${authX}, empty search_path`,
       f ? `definer=${f.prosecdef} anon=${f.anon_x} auth=${f.auth_x}` : "missing");
   }
+
+  // Live bag sync (web ↔ mobile): cart_items writes ping a private Realtime topic.
+  const cartTriggers = (await db.query(
+    "select tgname from pg_trigger where tgrelid = 'public.cart_items'::regclass and tgname like 'cart_items_notify_%'")).rows.length;
+  r.check(cartTriggers === 3, "cart_items insert/update/delete notify triggers installed", `${cartTriggers}`);
+  const rtPolicies = (await db.query(`select polname, polcmd from pg_policy
+    where polrelid = 'realtime.messages'::regclass and polname = 'cart topic: owner receives'`)).rows;
+  r.check(rtPolicies.length === 1 && rtPolicies[0].polcmd === "r", "realtime.messages: cart topic is receive-only for its owner",
+    JSON.stringify(rtPolicies));
 
   const priv = [
     ["anon", "table", "public.inventory", null, "select", false],

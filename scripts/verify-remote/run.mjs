@@ -4,6 +4,7 @@ import { connectDb, createReporter, loadConfig, runId, sweepTestData } from "./l
 import { verifySchema } from "./schema.mjs";
 import { verifyPgTap } from "./pgtap.mjs";
 import { verifyApi } from "./api.mjs";
+import { wakeRealtime } from "./realtime.mjs";
 
 const cfg = loadConfig();
 const r = createReporter();
@@ -14,6 +15,7 @@ try {
   const swept = await sweepTestData(cfg, db);
   if (swept) console.log(`Removed ${swept} test user(s) left by an earlier run.`);
   await verifySchema(db, r);
+  await wakeRealtime(cfg, db, r);
   await verifyPgTap(db, r);
   await verifyApi(cfg, db, r, runId());
 } catch (e) {

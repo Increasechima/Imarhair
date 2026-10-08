@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import pg from "pg";
 import { createClient } from "@supabase/supabase-js";
 
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+for (const f of ["apps/web/.env.local", ".env.local"]) if (existsSync(f)) process.loadEnvFile(f);
 
 const REQUIRED = [
   "NEXT_PUBLIC_SUPABASE_URL",
