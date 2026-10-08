@@ -1,10 +1,10 @@
-// pnpm db:types:remote: regenerate src/lib/supabase/database.types.ts from the
+// pnpm db:types:remote: regenerate packages/shared/src/database.types.ts from the
 // hosted project in SUPABASE_DB_URL (no Docker needed).
 import { existsSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+for (const f of ["apps/web/.env.local", ".env.local"]) if (existsSync(f)) process.loadEnvFile(f);
 if (!process.env.SUPABASE_DB_URL) {
   console.error("SUPABASE_DB_URL is not set (see .env.example).");
   process.exit(2);
@@ -18,5 +18,5 @@ const out = execFileSync(
   [cli, "gen", "types", "typescript", "--db-url", process.env.SUPABASE_DB_URL, "--schema", "public"],
   { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
 );
-writeFileSync("src/lib/supabase/database.types.ts", out);
-console.log("Wrote src/lib/supabase/database.types.ts");
+writeFileSync("packages/shared/src/database.types.ts", out);
+console.log("Wrote packages/shared/src/database.types.ts");

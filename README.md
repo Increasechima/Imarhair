@@ -37,8 +37,8 @@ Built with Next.js, Supabase, Paystack and Mailgun. The site is simple for custo
 # 1. Install
 pnpm install
 
-# 2. Environment
-cp .env.example .env.local
+# 2. Environment (one file, read by the website and the repo scripts)
+cp apps/web/.env.example apps/web/.env.local
 #    fill in values (see table below)
 
 # 3. Local database (migrations + seed products)
@@ -51,7 +51,23 @@ pnpm dev
 # → http://localhost:3000
 ```
 
-`pnpm db:start` prints the local API URL and keys. Put the URL and anon/publishable key in `.env.local`. Local Supabase Studio runs at http://localhost:54323, and confirmation and reset emails sent locally appear in the mail catcher at http://localhost:54324.
+`pnpm db:start` prints the local API URL and keys. Put the URL and anon/publishable key in `apps/web/.env.local`. Local Supabase Studio runs at http://localhost:54323, and confirmation and reset emails sent locally appear in the mail catcher at http://localhost:54324.
+
+### Mobile app (`apps/mobile`)
+
+An Expo app for iOS and Android. It uses the same Supabase project, account and bag as the website, and calls the website's `/api/v1` routes, so run `pnpm dev` alongside it.
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env.local
+#    EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY: same values as the website
+#    EXPO_PUBLIC_SITE_URL: the website, as your phone can reach it, e.g. http://192.168.1.20:3000
+pnpm dev:mobile      # then open in Expo Go or a development build
+```
+
+- **Live bag:** sign in with the same account on the web and in the app. Adding to the bag on one shows up on the other within about a second, via Supabase Realtime.
+- **Checkout** opens the website's checkout in an in-app browser. Signed-in shoppers arrive already signed in (single-use link); guests arrive with their bag.
+- **Google sign-in** in the app needs `imarhair://auth-callback` in Supabase → Authentication → URL Configuration → Redirect URLs (already in `supabase/config.toml` for local). It works in development builds; Expo Go uses a different redirect scheme.
+- Builds and store submission use EAS (`npx eas-cli@latest build`); see `apps/mobile/AGENTS.md`.
 
 ### Make yourself an admin (local)
 
@@ -66,14 +82,14 @@ Then open http://localhost:3000/admin.
 
 ## Environment variables
 
-Secrets go in `.env.local` (git-ignored). **Never commit secrets.** Variables without a `NEXT_PUBLIC_` prefix are server-only.
+Secrets go in `apps/web/.env.local` (git-ignored). **Never commit secrets.** Variables without a `NEXT_PUBLIC_` prefix are server-only.
 
 | Variable | Scope | Description |
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | public | e.g. `http://localhost:3000` / `https://imarhair.com` |
 | `NEXT_PUBLIC_SUPABASE_URL` | public | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | Supabase anon key (safe because RLS protects data) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server** | Service-role key. Used only in `src/server/privileged/**` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **server** | Service-role key. Used only in `apps/web/src/server/privileged/**` |
 | `PAYMENT_PROVIDER` | server | `paystack` (default) |
 | `PAYMENT_PUBLIC_KEY` | server | Paystack public key (`pk_test_…` / `pk_live_…`) |
 | `PAYMENT_SECRET_KEY` | **server** | Paystack secret key. Also used to verify webhook signatures |
@@ -109,7 +125,7 @@ pnpm build && pnpm start               # in another terminal
 pnpm verify:e2e                        # real browser at 375px; VERIFY_BASE_URL defaults to http://localhost:3000
 ```
 
-- Both commands need `SUPABASE_DB_URL` and `VERIFY_REMOTE_PROJECT_REF` in `.env.local`. They refuse to run unless `VERIFY_REMOTE_PROJECT_REF` matches the project in `NEXT_PUBLIC_SUPABASE_URL`, because they **create and delete test users** (`imar-verify-*@example.com`). Never point them at production.
+- Both commands need `SUPABASE_DB_URL` and `VERIFY_REMOTE_PROJECT_REF` in `apps/web/.env.local`. They refuse to run unless `VERIFY_REMOTE_PROJECT_REF` matches the project in `NEXT_PUBLIC_SUPABASE_URL`, because they **create and delete test users** (`imar-verify-*@example.com`). Never point them at production.
 - Test users are created with the Admin API, so no emails are sent. Everything they create is deleted, and leftovers from an aborted run are cleaned up at the start of the next one.
 - `supabase test db` needs Docker; `verify:remote` runs the same `supabase/tests/*.test.sql` files directly.
 
@@ -147,7 +163,7 @@ pnpm verify:e2e                        # real browser at 375px; VERIFY_BASE_URL 
 
 ## Deployment
 
-- **Vercel:** import the repo and add the environment variables for Preview (test keys, staging Supabase) and Production (live keys, prod Supabase).
+- **Vercel:** import the repo, set **Root Directory** to `apps/web` (pnpm workspace), and add the environment variables for Preview (test keys, staging Supabase) and Production (live keys, prod Supabase).
 - **Database:** CI runs `supabase db push` against the target project when changes merge to `main`.
 - **Pre-launch checklist:**
   - [ ] Live Paystack keys and webhook URL set, and one real payment plus refund tested

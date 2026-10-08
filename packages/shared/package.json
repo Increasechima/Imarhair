@@ -1,0 +1,24 @@
+{
+  "name": "@imarhair/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Code shared by the web and mobile apps: DB types, Zod schemas, money, bag lines, catalogue helpers. Plain TS, no platform APIs.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "vitest": "^5.0.3",
+    "@supabase/supabase-js": "^2.117.2"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.117.2"
+  }
+}
